@@ -1,4 +1,4 @@
-# Ledger — Daily Plan Tracker (Frontend)
+# Ledger — Daily Plan Tracker 
 
 ## Run it
 
