@@ -84,8 +84,8 @@ export default function StreakCalendar({ plans }) {
             <div className="flex items-center gap-2">
               <Flame
                 size={18}
-                className={streak > 0 ? 'text-ledger-accent' : 'text-ledger-inkSoft'}
-                fill={streak > 0 ? 'currentColor' : 'none'}
+                className={bestStreak > 0 ? 'text-ledger-accent' : 'text-ledger-inkSoft'}
+                fill={bestStreak > 0 ? 'currentColor' : 'none'}
               />
               <span className="font-display text-lg font-semibold text-ledger-success">{bestStreak}</span>
             </div>
