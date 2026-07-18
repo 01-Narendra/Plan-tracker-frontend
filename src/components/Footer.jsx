@@ -1,18 +1,18 @@
 import React from 'react'
-import { Github, Linkedin, Mail, Twitter } from 'lucide-react'
+import { CalendarDays, CheckCircle2, Flame, Github, Linkedin, Mail, Target, Twitter } from 'lucide-react'
 
-const LINK_COLUMNS = [
+const INFO_SECTIONS = [
   {
-    title: 'Product',
-    links: ['Dashboard', 'Plans', 'Streaks', 'Changelog'],
+    title: 'Build Consistency',
+    text: 'Small actions repeated every day create lasting habits and meaningful progress.',
   },
   {
-    title: 'Resources',
-    links: ['Guide', 'FAQ', 'Support'],
+    title: 'Track Your Progress',
+    text: 'Organize your day, complete your tasks, and keep moving toward your goals.',
   },
   {
-    title: 'Company',
-    links: ['About', 'Privacy', 'Terms'],
+    title: 'Stay Accountable',
+    text: 'Every completed day is another step forward. Progress matters more than perfection.',
   },
 ]
 
@@ -37,54 +37,45 @@ export default function Footer() {
               start over every Monday.
             </p>
             <div className="flex items-center gap-3 mt-4">
-              <a
-                href="#"
-                aria-label="GitHub"
+              <div
                 className="w-8 h-8 flex items-center justify-center rounded-full border border-ledger-rule text-ledger-inkSoft hover:text-ledger-accent hover:border-ledger-accent transition"
+                title="Daily Planning"
               >
-                <Github size={15} />
-              </a>
-              <a
-                href="#"
-                aria-label="Twitter"
+                <CalendarDays size={15} />
+              </div>
+
+              <div
                 className="w-8 h-8 flex items-center justify-center rounded-full border border-ledger-rule text-ledger-inkSoft hover:text-ledger-accent hover:border-ledger-accent transition"
+                title="Goals"
               >
-                <Twitter size={15} />
-              </a>
-              <a
-                href="#"
-                aria-label="LinkedIn"
+                <Target size={15} />
+              </div>
+
+              <div
                 className="w-8 h-8 flex items-center justify-center rounded-full border border-ledger-rule text-ledger-inkSoft hover:text-ledger-accent hover:border-ledger-accent transition"
+                title="Streaks"
               >
-                <Linkedin size={15} />
-              </a>
-              <a
-                href="mailto:hello@ledger.app"
-                aria-label="Email"
+                <Flame size={15} />
+              </div>
+
+              <div
                 className="w-8 h-8 flex items-center justify-center rounded-full border border-ledger-rule text-ledger-inkSoft hover:text-ledger-accent hover:border-ledger-accent transition"
+                title="Completed Tasks"
               >
-                <Mail size={15} />
-              </a>
+                <CheckCircle2 size={15} />
+              </div>
             </div>
           </div>
 
-          {LINK_COLUMNS.map((col) => (
-            <div key={col.title}>
-              <h4 className="font-mono text-[11px] uppercase tracking-widest text-ledger-inkSoft mb-3">
-                {col.title}
+          {INFO_SECTIONS.map((section) => (
+            <div key={section.title}>
+              <h4 className="font-display text-base font-semibold text-ledger-ink mb-3">
+                {section.title}
               </h4>
-              <ul className="space-y-2">
-                {col.links.map((link) => (
-                  <li key={link}>
-                    <a
-                      href="#"
-                      className="text-sm text-ledger-ink/80 hover:text-ledger-accent transition"
-                    >
-                      {link}
-                    </a>
-                  </li>
-                ))}
-              </ul>
+
+              <p className="text-sm text-ledger-inkSoft leading-relaxed">
+                {section.text}
+              </p>
             </div>
           ))}
         </div>
