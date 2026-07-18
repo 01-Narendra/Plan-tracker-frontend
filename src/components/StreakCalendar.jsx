@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight, Flame } from 'lucide-react'
+import { getCurrentStreak, getDailyCompletionMap, STREAK_THRESHOLD, getBestStreak } from '../utils/streak.js'
 import { api } from '../api/api.js'
 
 const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
@@ -15,7 +16,6 @@ function toDateStr(date) {
 export default function StreakCalendar({ plans }) {
   const [viewDate, setViewDate] = useState(new Date())
   const [dailyMap, setDailyMap] = useState({})
-  const [streak, setStreak] = useState(0)
   const [threshold, setThreshold] = useState(75)
 
   useEffect(() => {
@@ -23,7 +23,6 @@ export default function StreakCalendar({ plans }) {
       try {
         const stats = await api.plans.getDailyStats()
         setDailyMap(stats.dailyCompletion || {})
-        setStreak(stats.streak || 0)
         setThreshold(stats.threshold || 50)
       } catch (err) {
         console.error('Failed to fetch daily stats:', err.message)
@@ -59,18 +58,38 @@ export default function StreakCalendar({ plans }) {
     setViewDate(new Date(year, month + delta, 1))
   }
 
+  const streak = useMemo(() => getCurrentStreak(dailyMap), [dailyMap])
+  const bestStreak = useMemo(() => getBestStreak(plans), [plans])
+
+
   return (
     <div className="bg-ledger-panel border border-ledger-rule rounded-2xl shadow-stamp p-5">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Flame
-            size={18}
-            className={streak > 0 ? 'text-ledger-accent' : 'text-ledger-inkSoft'}
-            fill={streak > 0 ? 'currentColor' : 'none'}
-          />
-          <span className="font-display text-lg font-semibold text-ledger-ink">
-            {streak}-day streak
-          </span>
+      <div className="flex items-center mb-5">
+        <div className="flex items-center gap-6">
+          <div className="text-center">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-ledger-inkSoft">Current</p>
+            <div className="flex items-center gap-1">
+              <Flame
+                size={18}
+                className={streak > 0 ? 'text-ledger-accent' : 'text-ledger-inkSoft'}
+                fill={streak > 0 ? 'currentColor' : 'none'}
+              />
+              <span className="font-display text-lg font-semibold text-ledger-accent">{streak}</span>
+            </div>
+            
+          </div>
+          <div className="w-px h-8 bg-ledger-rule"></div>
+          <div className="text-center">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-ledger-success">Best</p>
+            <div className="flex items-center gap-2">
+              <Flame
+                size={18}
+                className={streak > 0 ? 'text-ledger-accent' : 'text-ledger-inkSoft'}
+                fill={streak > 0 ? 'currentColor' : 'none'}
+              />
+              <span className="font-display text-lg font-semibold text-ledger-success">{bestStreak}</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -82,7 +101,7 @@ export default function StreakCalendar({ plans }) {
         >
           <ChevronLeft size={16} />
         </button>
-        <span className="font-mono text-xs uppercase tracking-widest text-ledger-inkSoft">
+        <span className="font-mono font-bold text-xs uppercase tracking-widest text-ledger-inkSoft">
           {monthLabel}
         </span>
         <button

@@ -31,7 +31,7 @@ export default function TrendChart({ history }) {
   return (
     <div className="h-40 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 8, right: 10, bottom: 0, left: 5 }}>
+        <LineChart data={data} margin={{ top: 8, right: 10, bottom: 0, left: 1 }}>
           <XAxis
             dataKey="day"
             tick={{ fontSize: 10, fill: '#4B5468', fontFamily: 'IBM Plex Mono' }}
