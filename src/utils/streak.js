@@ -1,6 +1,6 @@
 import { calcPercentage } from './planStorage.js'
 
-const STREAK_THRESHOLD = 50 // % completion needed for a day to "count"
+const STREAK_THRESHOLD = 75 // % completion needed for a day to "count"
 
 function toDateStr(d) {
   return d.toISOString().slice(0, 10)
@@ -35,7 +35,7 @@ export function getDailyCompletionMap(plans) {
 }
 
 // Walks backward day-by-day from today counting consecutive days whose
-// average completion was >= 50%. Stops at the first day that misses the bar
+// average completion was >= 75%. Stops at the first day that misses the bar
 // or has no data — that's the "streak break".
 export function getCurrentStreak(dailyMap) {
   let streak = 0
@@ -64,6 +64,45 @@ export function getCurrentStreak(dailyMap) {
   }
 
   return streak
+}
+
+export function getBestStreak(plans) {
+  let maxStreak = 0
+  let currentStreak = 0
+  const threshold = STREAK_THRESHOLD
+
+  const recurringPlans = plans.filter(p => p.recurring)
+  const dates = new Set()
+
+  recurringPlans.forEach(plan => {
+    ;(plan.history || []).forEach(h => dates.add(h.date))
+  })
+
+  const sortedDates = Array.from(dates).sort()
+
+  sortedDates.forEach(dateStr => {
+    let dayTotal = 0
+    let dayCount = 0
+
+    recurringPlans.forEach(plan => {
+      const entry = plan.history?.find(h => h.date === dateStr)
+      if (entry) {
+        dayTotal += entry.percentage
+        dayCount++
+      }
+    })
+
+    const dayAverage = dayCount > 0 ? Math.round(dayTotal / dayCount) : 0
+
+    if (dayAverage >= threshold) {
+      currentStreak++
+      maxStreak = Math.max(maxStreak, currentStreak)
+    } else {
+      currentStreak = 0
+    }
+  })
+
+  return maxStreak
 }
 
 export { STREAK_THRESHOLD }
