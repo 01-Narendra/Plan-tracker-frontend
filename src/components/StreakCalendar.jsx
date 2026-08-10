@@ -17,50 +17,22 @@ function toDateStr(date) {
 export default function StreakCalendar({ plans }) {
   const [viewDate, setViewDate] = useState(new Date())
   const [dailyMap, setDailyMap] = useState({})
-  const [threshold, setThreshold] = useState(50)
+  const [threshold, setThreshold] = useState(75)
   const [selectedDate, setSelectedDate] = useState(null)
   const [selectedPlanData, setSelectedPlanData] = useState(null)
 
-
-  const safePlans = Array.isArray(plans) ? plans : []
-
   useEffect(() => {
-    if (safePlans.length === 0) {
-      setDailyMap({})
-      setStreak(0)
-      setBestStreak(0)
-      return
+    async function fetchStats() {
+      try {
+        const stats = await api.plans.getDailyStats()
+        setDailyMap(stats.dailyCompletion || {})
+        setThreshold(stats.threshold || 50)
+      } catch (err) {
+        console.error('Failed to fetch daily stats:', err.message)
+      }
     }
-
-    const map = getDailyCompletionMap(safePlans)
-    setDailyMap(map)
-    setStreak(getCurrentStreak(safePlans))
-    setBestStreak(getBestStreak(safePlans))
-    setThreshold(STREAK_THRESHOLD)
-  }, [safePlans])
-
-
-  function handleDateClick(dateStr) {
-    if (!dailyMap[dateStr]) return
-
-    const planWithData = safePlans.find(p => {
-      if (!p || !p.recurring) return false
-      const history = p.history || []
-      const historyEntry = history.find(h => h && h.date === dateStr)
-      return !!historyEntry
-    })
-
-    if (planWithData) {
-      const history = planWithData.history || []
-      const historyEntry = history.find(h => h && h.date === dateStr)
-      setSelectedPlanData({
-        date: dateStr,
-        planName: planWithData.name,
-        points: historyEntry?.points || [],
-      })
-      setSelectedDate(dateStr)
-    }
-  }
+    fetchStats()
+  }, [plans])
 
   const year = viewDate.getFullYear()
   const month = viewDate.getMonth()

@@ -11,13 +11,13 @@ import { setToastFunction } from '../api/api.js'
 
 export default function Dashboard() {
   const { user, token, logout } = useAuth()
-  const { addToast } = useToast()
-  const [plans, setPlans] = useState([])  // Initialize as empty array
+  const [plans, setPlans] = useState([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
+  const { addToast } = useToast() 
 
   useEffect(() => {
-    setToastFunction(addToast)
+    setToastFunction(addToast)              
   }, [addToast])
 
   useEffect(() => {
@@ -30,11 +30,9 @@ export default function Dashboard() {
     setLoading(true)
     try {
       const data = await api.plans.getPlans()
-      // Safety check - ensure data is array
-      setPlans(Array.isArray(data) ? data : [])
+      setPlans(data)
     } catch (err) {
       console.error('Failed to fetch plans:', err.message)
-      setPlans([])
     } finally {
       setLoading(false)
     }
