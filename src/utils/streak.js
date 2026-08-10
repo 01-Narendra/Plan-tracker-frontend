@@ -9,39 +9,45 @@ function toDateStr(d) {
 // Builds a map of { 'YYYY-MM-DD': averagePercentage } across every recurring
 // plan, including today's live (not-yet-archived) progress.
 export function getDailyCompletionMap(plans) {
-  const recurring = plans.filter((p) => p.recurring)
-  const map = {}
-  const counts = {}
+  // Safety check
+  if (!plans || !Array.isArray(plans) || plans.length === 0) return {}
 
-  recurring.forEach((plan) => {
-    ;(plan.history || []).forEach(({ date, percentage }) => {
-      map[date] = (map[date] || 0) + percentage
-      counts[date] = (counts[date] || 0) + 1
+  const recurringPlans = plans.filter(p => p && p.recurring)
+  const dailyMap = {}
+
+  recurringPlans.forEach(plan => {
+    const history = plan.history || []
+    if (!Array.isArray(history)) return
+
+    history.forEach(h => {
+      if (!h || !h.date) return
+      if (typeof h.percentage !== 'number') return
+
+      if (!dailyMap[h.date]) {
+        dailyMap[h.date] = []
+      }
+      dailyMap[h.date].push(h.percentage)
     })
-
-    const today = toDateStr(new Date())
-    if (plan.lastActiveDate === today) {
-      const livePct = calcPercentage(plan.points)
-      map[today] = (map[today] || 0) + livePct
-      counts[today] = (counts[today] || 0) + 1
-    }
   })
 
-  Object.keys(map).forEach((date) => {
-    map[date] = Math.round(map[date] / counts[date])
+  // Calculate average for each day
+  const result = {}
+  Object.entries(dailyMap).forEach(([date, percentages]) => {
+    result[date] = Math.round(percentages.reduce((a, b) => a + b, 0) / percentages.length)
   })
 
-  return map
+  return result
 }
 
 // Walks backward day-by-day from today counting consecutive days whose
 // average completion was >= 75%. Stops at the first day that misses the bar
 // or has no data — that's the "streak break".
 export function getCurrentStreak(plans) {
-  if (!plans || plans.length === 0) return 0
+  // Safety check - ensure plans is an array
+  if (!plans || !Array.isArray(plans) || plans.length === 0) return 0
 
   const threshold = STREAK_THRESHOLD
-  const recurringPlans = plans.filter(p => p.recurring)
+  const recurringPlans = plans.filter(p => p && p.recurring)
 
   if (recurringPlans.length === 0) return 0
 
@@ -49,11 +55,17 @@ export function getCurrentStreak(plans) {
   const dateMap = new Map()
 
   recurringPlans.forEach(plan => {
-    ;(plan.history || []).forEach(h => {
+    const history = plan.history || []
+    if (!Array.isArray(history)) return
+
+    history.forEach(h => {
+      if (!h || !h.date) return
       if (!dateMap.has(h.date)) {
         dateMap.set(h.date, [])
       }
-      dateMap.get(h.date).push(h.percentage)
+      if (typeof h.percentage === 'number') {
+        dateMap.get(h.date).push(h.percentage)
+      }
     })
   })
 
@@ -105,15 +117,25 @@ export function getCurrentStreak(plans) {
 }
 
 export function getBestStreak(plans) {
+  // Safety check
+  if (!plans || !Array.isArray(plans) || plans.length === 0) return 0
+
   let maxStreak = 0
   let currentStreak = 0
   const threshold = STREAK_THRESHOLD
 
-  const recurringPlans = plans.filter(p => p.recurring)
+  const recurringPlans = plans.filter(p => p && p.recurring)
   const dates = new Set()
 
   recurringPlans.forEach(plan => {
-    ;(plan.history || []).forEach(h => dates.add(h.date))
+    const history = plan.history || []
+    if (!Array.isArray(history)) return
+
+    history.forEach(h => {
+      if (h && h.date) {
+        dates.add(h.date)
+      }
+    })
   })
 
   const sortedDates = Array.from(dates).sort()
@@ -123,8 +145,11 @@ export function getBestStreak(plans) {
     let dayCount = 0
 
     recurringPlans.forEach(plan => {
-      const entry = plan.history?.find(h => h.date === dateStr)
-      if (entry) {
+      const history = plan.history || []
+      if (!Array.isArray(history)) return
+
+      const entry = history.find(h => h && h.date === dateStr)
+      if (entry && typeof entry.percentage === 'number') {
         dayTotal += entry.percentage
         dayCount++
       }
