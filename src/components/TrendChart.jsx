@@ -5,9 +5,12 @@ import { extractAvailableMonthsAndYears, getChartDataForMonthYear } from '../uti
 const COLORS = ['#D9531E', '#2F8F5B', '#1C2438', '#6B5B95', '#88B0D3']
 
 export default function TrendChart({ plans }) {
+
+  const safePlans = Array.isArray(plans) ? plans : []
+
   const { years, monthsForYear, currentYear } = useMemo(() => {
-    return extractAvailableMonthsAndYears(plans)
-  }, [plans])
+    return extractAvailableMonthsAndYears(safePlans)
+  }, [safePlans])
 
   const [selectedYear, setSelectedYear] = useState(currentYear)
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth())
@@ -29,7 +32,7 @@ export default function TrendChart({ plans }) {
     return Array.from(names).slice(0, COLORS.length)
   }, [plans])
 
-  if (plans.length === 0) {
+  if (safePlans.length === 0) {
     return (
       <div className="bg-ledger-panel border border-ledger-rule rounded-2xl shadow-stamp p-5">
         <p className="text-ledger-inkSoft text-center">No data to display</p>

@@ -10,7 +10,9 @@ function toDateStr(d) {
 // plan, including today's live (not-yet-archived) progress.
 export function getDailyCompletionMap(plans) {
   // Safety check
-  if (!plans || !Array.isArray(plans) || plans.length === 0) return {}
+  if (!plans) return {}
+  if (!Array.isArray(plans)) return {}
+  if (plans.length === 0) return {}
 
   const recurringPlans = plans.filter(p => p && p.recurring)
   const dailyMap = {}
@@ -44,7 +46,9 @@ export function getDailyCompletionMap(plans) {
 // or has no data — that's the "streak break".
 export function getCurrentStreak(plans) {
   // Safety check - ensure plans is an array
-  if (!plans || !Array.isArray(plans) || plans.length === 0) return 0
+  if (!plans) return 0
+  if (!Array.isArray(plans)) return 0
+  if (plans.length === 0) return 0
 
   const threshold = STREAK_THRESHOLD
   const recurringPlans = plans.filter(p => p && p.recurring)
@@ -118,7 +122,9 @@ export function getCurrentStreak(plans) {
 
 export function getBestStreak(plans) {
   // Safety check
-  if (!plans || !Array.isArray(plans) || plans.length === 0) return 0
+  if (!plans) return 0
+  if (!Array.isArray(plans)) return 0
+  if (plans.length === 0) return 0
 
   let maxStreak = 0
   let currentStreak = 0

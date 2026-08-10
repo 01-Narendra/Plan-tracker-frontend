@@ -1,10 +1,20 @@
 export function extractAvailableMonthsAndYears(plans) {
+  if (!plans || !Array.isArray(plans) || plans.length === 0) {
+    return {
+      years: [],
+      monthsForYear: () => [],
+      currentYear: new Date().getFullYear(),
+    }
+  }
+  
   const dates = new Set()
 
   plans.forEach(plan => {
-    if (!plan.history) return
+    if (!plan || !plan.history) return
+    if (!Array.isArray(plan.history)) return
+
     plan.history.forEach(entry => {
-      if (entry.date) {
+      if (entry && entry.date) {
         dates.add(entry.date)
       }
     })
@@ -75,6 +85,9 @@ export function filterDataByMonthYear(plans, year, month) {
 }
 
 export function getChartDataForMonthYear(plans, year, month) {
+  // Safety check
+  if (!plans || !Array.isArray(plans)) return []
+
   const daysInMonth = new Date(year, month + 1, 0).getDate()
   const data = []
 
@@ -83,9 +96,12 @@ export function getChartDataForMonthYear(plans, year, month) {
     const dayData = { date: day }
 
     plans.forEach(plan => {
-      if (!plan.recurring) return
-      const entry = plan.history?.find(h => h.date === dateStr)
-      if (entry) {
+      if (!plan || !plan.recurring) return
+      const history = plan.history || []
+      if (!Array.isArray(history)) return
+
+      const entry = history.find(h => h && h.date === dateStr)
+      if (entry && typeof entry.percentage === 'number') {
         dayData[plan.name] = entry.percentage
       }
     })
@@ -97,3 +113,5 @@ export function getChartDataForMonthYear(plans, year, month) {
 
   return data
 }
+
+
