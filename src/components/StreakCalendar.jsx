@@ -17,8 +17,6 @@ function toDateStr(date) {
 export default function StreakCalendar({ plans }) {
   const [viewDate, setViewDate] = useState(new Date())
   const [dailyMap, setDailyMap] = useState({})
-  const [streak, setStreak] = useState(0)
-  const [bestStreak, setBestStreak] = useState(0)
   const [threshold, setThreshold] = useState(50)
   const [selectedDate, setSelectedDate] = useState(null)
   const [selectedPlanData, setSelectedPlanData] = useState(null)
