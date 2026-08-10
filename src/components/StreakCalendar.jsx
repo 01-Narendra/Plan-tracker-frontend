@@ -1,8 +1,18 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight, Flame } from 'lucide-react'
 import { getCurrentStreak, getDailyCompletionMap, STREAK_THRESHOLD, getBestStreak } from '../utils/streak.js'
 import DateDetailsPopup from './DateDetailsPopup.jsx'
 import { api } from '../api/api.js'
+
+const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+
+function toDateStr(date) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-')
+}
 
 export default function StreakCalendar({ plans }) {
   const [viewDate, setViewDate] = useState(new Date())
@@ -13,7 +23,7 @@ export default function StreakCalendar({ plans }) {
   const [selectedDate, setSelectedDate] = useState(null)
   const [selectedPlanData, setSelectedPlanData] = useState(null)
 
-  // Safety check
+
   const safePlans = Array.isArray(plans) ? plans : []
 
   useEffect(() => {
@@ -24,125 +34,167 @@ export default function StreakCalendar({ plans }) {
       return
     }
 
-    try {
-      const map = getDailyCompletionMap(safePlans)
-      setDailyMap(map || {})
-      setStreak(getCurrentStreak(safePlans) || 0)
-      setBestStreak(getBestStreak(safePlans) || 0)
-      setThreshold(STREAK_THRESHOLD || 50)
-    } catch (error) {
-      console.error('Error updating streak data:', error)
-      setDailyMap({})
-      setStreak(0)
-      setBestStreak(0)
-    }
+    const map = getDailyCompletionMap(safePlans)
+    setDailyMap(map)
+    setStreak(getCurrentStreak(safePlans))
+    setBestStreak(getBestStreak(safePlans))
+    setThreshold(STREAK_THRESHOLD)
   }, [safePlans])
 
+
   function handleDateClick(dateStr) {
-    try {
-      if (!dailyMap || !dailyMap[dateStr]) return
+    if (!dailyMap[dateStr]) return
 
-      const planWithData = safePlans.find(p => {
-        if (!p || !p.recurring) return false
-        const history = Array.isArray(p.history) ? p.history : []
-        const historyEntry = history.find(h => h && h.date === dateStr)
-        return !!historyEntry
+    const planWithData = safePlans.find(p => {
+      if (!p || !p.recurring) return false
+      const history = p.history || []
+      const historyEntry = history.find(h => h && h.date === dateStr)
+      return !!historyEntry
+    })
+
+    if (planWithData) {
+      const history = planWithData.history || []
+      const historyEntry = history.find(h => h && h.date === dateStr)
+      setSelectedPlanData({
+        date: dateStr,
+        planName: planWithData.name,
+        points: historyEntry?.points || [],
       })
-
-      if (planWithData) {
-        const history = Array.isArray(planWithData.history) ? planWithData.history : []
-        const historyEntry = history.find(h => h && h.date === dateStr)
-        setSelectedPlanData({
-          date: dateStr,
-          planName: planWithData.name || 'Unknown Plan',
-          points: (historyEntry && Array.isArray(historyEntry.points)) ? historyEntry.points : [],
-        })
-        setSelectedDate(dateStr)
-      }
-    } catch (error) {
-      console.error('Error clicking date:', error)
+      setSelectedDate(dateStr)
     }
   }
 
-  // Rest of component stays the same
   const year = viewDate.getFullYear()
   const month = viewDate.getMonth()
-  const firstDay = new Date(year, month, 1)
-  const lastDay = new Date(year, month + 1, 0)
-  const daysInMonth = lastDay.getDate()
-  const startingDayOfWeek = firstDay.getDay()
+  const monthLabel = viewDate.toLocaleDateString(undefined, {
+    month: 'long',
+    year: 'numeric',
+  })
 
-  const days = []
-  for (let i = 0; i < startingDayOfWeek; i++) {
-    days.push(null)
+  const firstDayOfMonth = new Date(year, month, 1)
+  const startWeekday = firstDayOfMonth.getDay()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const todayStr = toDateStr(new Date())
+
+  const cells = []
+  for (let i = 0; i < startWeekday; i++) cells.push(null)
+  for (let day = 1; day <= daysInMonth; day++) cells.push(day)
+
+  function dayStatus(day) {
+    const dateStr = toDateStr(new Date(year, month, day))
+    const pct = dailyMap[dateStr]
+    if (pct === undefined) return { state: 'empty', pct: null }
+    return { state: pct >= threshold ? 'hit' : 'missed', pct }
   }
-  for (let day = 1; day <= daysInMonth; day++) {
-    days.push(day)
+
+  function changeMonth(delta) {
+    setViewDate(new Date(year, month + delta, 1))
   }
+
+  function handleDateClick(dateStr) {
+    if (!dailyMap[dateStr]) return
+
+    const planWithData = plans.find(p => {
+      if (!p.recurring) return false
+      const historyEntry = p.history?.find(h => h.date === dateStr)
+      return !!historyEntry
+    })
+
+    if (planWithData) {
+      const historyEntry = planWithData.history.find(h => h.date === dateStr)
+      setSelectedPlanData({
+        date: dateStr,
+        planName: planWithData.name,
+        points: historyEntry?.points || [],
+      })
+      setSelectedDate(dateStr)
+    }
+  }
+
 
   return (
     <>
       <div className="bg-ledger-panel border border-ledger-rule rounded-2xl shadow-stamp p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Flame size={18} className={streak > 0 ? 'text-ledger-accent' : 'text-ledger-inkSoft'} fill={streak > 0 ? 'currentColor' : 'none'} />
-            </div>
-            <div className="flex items-center gap-6">
-              <div className="text-center">
-                <p className="font-mono text-[10px] uppercase tracking-widest text-ledger-inkSoft">Current</p>
+        <div className="flex items-center mb-5">
+          <div className="flex items-center gap-6">
+            <div className="text-center">
+              <p className="font-mono text-[10px] uppercase tracking-widest text-ledger-inkSoft">Current</p>
+              <div className="flex items-center gap-1">
+                <Flame
+                  size={18}
+                  className={streak > 0 ? 'text-ledger-accent' : 'text-ledger-inkSoft'}
+                  fill={streak > 0 ? 'currentColor' : 'none'}
+                />
                 <span className="font-display text-lg font-semibold text-ledger-accent">{streak}</span>
               </div>
-              <div className="w-px h-8 bg-ledger-rule"></div>
-              <div className="text-center">
-                <p className="font-mono text-[10px] uppercase tracking-widest text-ledger-success">Best</p>
+              
+            </div>
+            <div className="w-px h-8 bg-ledger-rule"></div>
+            <div className="text-center">
+              <p className="font-mono text-[10px] uppercase tracking-widest text-ledger-success">Best</p>
+              <div className="flex items-center gap-2">
+                <Flame
+                  size={18}
+                  className={bestStreak > 0 ? 'text-ledger-accent' : 'text-ledger-inkSoft'}
+                  fill={bestStreak > 0 ? 'currentColor' : 'none'}
+                />
                 <span className="font-display text-lg font-semibold text-ledger-success">{bestStreak}</span>
               </div>
             </div>
           </div>
-          <div className="flex gap-2">
-            <button onClick={() => setViewDate(new Date(year, month - 1))} className="p-2 hover:bg-ledger-rule/50 rounded-lg">
-              <ChevronLeft size={16} />
-            </button>
-            <button onClick={() => setViewDate(new Date())} className="px-3 py-2 text-sm font-semibold hover:bg-ledger-rule/50 rounded-lg">
-              {new Date(year, month).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-            </button>
-            <button onClick={() => setViewDate(new Date(year, month + 1))} className="p-2 hover:bg-ledger-rule/50 rounded-lg">
-              <ChevronRight size={16} />
-            </button>
-          </div>
         </div>
 
-        <div className="grid grid-cols-7 gap-2">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-            <div key={d} className="text-center font-mono text-[10px] uppercase text-ledger-inkSoft py-2">
+        <div className="flex items-center justify-between mb-3">
+          <button
+            onClick={() => changeMonth(-1)}
+            className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-ledger-rule/50 text-ledger-inkSoft transition"
+            aria-label="Previous month"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <span className="font-mono font-bold text-xs uppercase tracking-widest text-ledger-inkSoft">
+            {monthLabel}
+          </span>
+          <button
+            onClick={() => changeMonth(1)}
+            className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-ledger-rule/50 text-ledger-inkSoft transition"
+            aria-label="Next month"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-7 gap-1 mb-1">
+          {WEEKDAYS.map((d, i) => (
+            <div
+              key={i}
+              className="text-center font-mono text-[10px] text-ledger-inkSoft/70 py-1"
+            >
               {d}
             </div>
           ))}
+        </div>
 
-          {days.map((day, idx) => {
-            if (!day) return <div key={`empty-${idx}`} />
+        <div className="grid grid-cols-7 gap-1">
+          {cells.map((day, idx) => {
+            if (day === null) return <div key={idx} />
 
-            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-            const pct = dailyMap ? dailyMap[dateStr] : null
-            const isToday = new Date().toDateString() === new Date(year, month, day).toDateString()
+            const dateStr = toDateStr(new Date(year, month, day))
+            const { state, pct } = dayStatus(day)
+            const isToday = dateStr === todayStr
 
-            let stateClasses = 'text-ledger-ink'
-            if (pct === undefined) {
-              stateClasses = 'bg-white text-ledger-inkSoft'
-            } else if (pct >= 75) {
-              stateClasses = 'bg-ledger-success text-white'
-            } else if (pct >= 50) {
-              stateClasses = 'bg-ledger-successSoft text-ledger-success'
-            } else {
-              stateClasses = 'bg-ledger-accentSoft text-ledger-accent'
-            }
-
-            const base = 'h-10 flex items-center justify-center rounded-lg font-semibold text-sm border border-ledger-rule'
+            const base =
+              'aspect-square flex items-center justify-center rounded-md font-mono text-[11px] transition'
+            const stateClasses =
+              state === 'hit'
+                ? 'bg-ledger-success text-white font-semibold'
+                : state === 'missed'
+                ? 'bg-ledger-accentSoft text-ledger-accent'
+                : 'bg-ledger-rule/25 text-ledger-inkSoft/60'
 
             return (
               <div
-                key={day}
+                key={idx}
                 onClick={() => handleDateClick(dateStr)}
                 title={pct !== null ? `${pct}% complete` : 'No data'}
                 className={`${base} ${stateClasses} ${isToday ? 'ring-2 ring-ledger-ink ring-offset-1 ring-offset-ledger-panel' : ''} ${pct !== undefined ? 'cursor-pointer hover:opacity-80' : 'cursor-default'}`}
@@ -151,6 +203,21 @@ export default function StreakCalendar({ plans }) {
               </div>
             )
           })}
+        </div>
+
+        <div className="flex items-center gap-4 mt-4 pt-3 border-t border-ledger-rule">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-sm bg-ledger-success" />
+            <span className="font-mono text-[10px] text-ledger-inkSoft">
+              ≥{threshold}%
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-sm bg-ledger-accentSoft" />
+            <span className="font-mono text-[10px] text-ledger-inkSoft">
+              &lt;{threshold}%
+            </span>
+          </div>
         </div>
       </div>
 
