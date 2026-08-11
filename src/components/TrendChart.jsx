@@ -70,7 +70,7 @@ export default function TrendChart({ history }) {
   return (
     <div className="w-full">
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-2 mb-3">
+      <div className="flex flex-wrap items-center mt-1 ml-1 gap-2 mb-3">
         {FILTERS.map((filter) => {
           const active = days === filter
 
@@ -112,7 +112,7 @@ export default function TrendChart({ history }) {
               data={data}
               margin={{
                 top: 8,
-                right: 10,
+                right: 15,
                 bottom: 0,
                 left: 1,
               }}
