@@ -112,7 +112,7 @@ export default function TrendChart({ history }) {
               data={data}
               margin={{
                 top: 8,
-                right: 15,
+                right: 20,
                 bottom: 0,
                 left: 1,
               }}
